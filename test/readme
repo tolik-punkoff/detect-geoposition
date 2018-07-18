@@ -1,0 +1,14 @@
+test script
+
+Use:
+onlysxgeo.php?ip=<ip-address>
+
+EXAMPLE: 
+
+onlysxgeo.php?ip=8.8.8.8
+or 
+onlysxgeo.php?ip=<ip-address>&f=FIELD_NAME
+for include Field name to answer, default FIELD value = MANUAL
+or 
+onlysxgeo.php?specdiap 
+For print special IP-address diapasons list
