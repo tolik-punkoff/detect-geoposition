@@ -1,2 +1,8 @@
-ip61.php - Show IP address data for automatic analyse
+ip62.php - Show IP address data for automatic analyse
 ip71.php - Show human-readable data about IP address
+
+Use:
+ip*.php for showing IP information from REMOTE_ADDR and HTTP_* $SERVER fields
+ip*.php?ip=[ip address e.q. 8.8.8.8] for show information about this ip
+ip62.php?ds - show answer data structure and fields desription (on russian)
+ip52.php?specdiap show list of special-use addresses diapasons (IPv4)
