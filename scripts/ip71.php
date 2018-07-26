@@ -47,15 +47,32 @@ $spec_list = array(
 
 // --------- Область функций ---------
 
-function isip($ip_str) //соответствие данных формату IP
-{	
-	global $ip_pattern;
-	$ret=FALSE;
-	if (preg_match($ip_pattern,$ip_str)) 
-	{
-		$ret=TRUE;
-	}
-	return $ret;
+function isip($ip)
+{
+	//преобразуем в нижний регистр, на случай шестнадцатиричных чисел
+	$ip=strtoupper($ip);
+	//ip2long в некоторых версиях php 
+	//некорректно реагирует на адрес 255.255.255.255
+	//делаем небольшую заглушку
+	if ($ip == '255.255.255.255'||$ip == '0xff.0xff.0xff.0xff'||
+	   $ip == '0377.0377.0377.0377')
+	   {
+		   return true;
+	   }
+	
+	$tolong=ip2long($ip);
+	
+	if ($tolong == -1||$tolong===FALSE) return FALSE;
+	else return TRUE;
+	
+}
+
+function fulladdr($ip)
+{
+	//преобразует неполные адреса в полные
+	//для информации
+	$tolong=ip2long($ip);
+	return long2ip ($tolong);
 }
 
 function chkdiapip ($user_ip, $ip_from, $ip_to) //попадает ли ip в нужный диапазон
@@ -115,12 +132,18 @@ function get_info_ip($field, $ip)
 		."-</td><td>".$field."</td><td>"."<font color='red'>Не IP</font>"."</td></tr>";
 		return $retv;  	
 	}
-
+	
+	$fa=fulladdr($ip); //получаем полный адрес на случай если тот был неполным
+	if ($fa!=$ip) //если ввели неполный адрес
+	{
+		$fa = $fa." [".$ip."]";
+	}
+	
 	//проверяем, не попал ли IP в особый диапазон
 	$check_diap = get_spec_diap($ip);
 	if ($check_diap!=-1)
 	{
-		$retv="<tr><td>".$ip."</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>"
+		$retv="<tr><td>".$fa."</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>"
 		."-</td><td>".$field."</td><td>"."<font color='yellow'>".$check_diap."</font>"."</td></tr>";
 		return $retv;
 	}
@@ -129,7 +152,7 @@ function get_info_ip($field, $ip)
 	$main_info = $SxGeo->get($ip);         // Краткая информация о городе или код страны (если используется база SxGeo Country)
 
 	//"FIELD|IP|MESSAGE|ISO_CODE|COUNTRY_NAME|CTNR_LAT|CTNR_LON|REGION_ISO|REGION_NAME|CITY_NAME|CTY_LAT|CTY_LON|\n";
-	$retv="<tr><td>".$ip."</td><td>".$main_info['country']['iso']."</td><td>".$add_info['country']['name_en']."</td><td>".
+	$retv="<tr><td>".$fa."</td><td>".$main_info['country']['iso']."</td><td>".$add_info['country']['name_en']."</td><td>".
 		$add_info['country']['lat']."</td><td>".$add_info['country']['lon']."</td><td>".
 		$add_info['region']['iso']."</td><td>".$add_info['region']['name_en']."</td><td>".
 		$main_info['city']['name_en']."</td><td>".$main_info['city']['lat']."</td><td>".$main_info['city']['lon'].'</td><td>'

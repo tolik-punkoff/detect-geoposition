@@ -47,15 +47,32 @@ $spec_list = array(
 
 // --------- Область функций ---------
 
-function isip($ip_str) //соответствие данных формату IP
-{	
-	global $ip_pattern;
-	$ret=FALSE;
-	if (preg_match($ip_pattern,$ip_str)) 
-	{
-		$ret=TRUE;
-	}
-	return $ret;
+function isip($ip)
+{
+	//преобразуем в нижний регистр, на случай шестнадцатиричных чисел
+	$ip=strtoupper($ip);
+	//ip2long в некоторых версиях php 
+	//некорректно реагирует на адрес 255.255.255.255
+	//делаем небольшую заглушку
+	if ($ip == '255.255.255.255'||$ip == '0xff.0xff.0xff.0xff'||
+	   $ip == '0377.0377.0377.0377')
+	   {
+		   return true;
+	   }
+	
+	$tolong=ip2long($ip);
+	
+	if ($tolong == -1||$tolong===FALSE) return FALSE;
+	else return TRUE;
+	
+}
+
+function fulladdr($ip)
+{
+	//преобразует неполные адреса в полные
+	//для информации
+	$tolong=ip2long($ip);
+	return long2ip ($tolong);
 }
 
 function chkdiapip ($user_ip, $ip_from, $ip_to) //попадает ли ip в нужный диапазон
@@ -111,26 +128,30 @@ function get_info_ip($field, $ip)
 	if (!isip($ip))
 	{
 		//не IP - записали в поле MESSAGE сообщение об ошибке и прекратили работу
-		$retv="0.0.0.0|0|0|0|0|0|0|0|0|0|".$field."|ERROR_NOT_IP";
+		$retv="0.0.0.0|0|0|0|0|0|0|0|0|0|".$field."|0|ERROR_NOT_IP";
 		return $retv;  	
 	}
+	
+	$inputip=$ip; //сохраняем введенный IP, он м.б. не полным, например
+	$ip=fulladdr($ip); //преобразуем в нормальный вид
 
 	//проверяем, не попал ли IP в особый диапазон
 	$check_diap = get_spec_diap($ip);
 	if ($check_diap!=-1)
 	{
-		$retv=$ip."|0|0|0|0|0|0|0|0|0|".$field."|WRN:".$check_diap;
+		$retv=$ip."|0|0|0|0|0|0|0|0|0|".$field."|".$inputip."|WRN:".$check_diap;
 		return $retv;
 	}
 
 	$add_info = $SxGeo->getCityFull($ip); // Вся информация о городе
 	$main_info = $SxGeo->get($ip);         // Краткая информация о городе или код страны (если используется база SxGeo Country)
 
-	//"IP|ISO_CODE|COUNTRY_NAME|CTNR_LAT|CTNR_LON|REGION_ISO|REGION_NAME|CITY_NAME|CTY_LAT|CTY_LON|FIELD|MESSAGE|\n";
+	//"IP|ISO_CODE|COUNTRY_NAME|CTNR_LAT|CTNR_LON|REGION_ISO|REGION_NAME|CITY_NAME|CTY_LAT|CTY_LON|FIELD|INPUT_IP|MESSAGE|\n";
 	$retv=$ip."|".$main_info['country']['iso']."|".$add_info['country']['name_en']."|".
 		$add_info['country']['lat']."|".$add_info['country']['lon']."|".
 		$add_info['region']['iso']."|".$add_info['region']['name_en']."|".
-		$main_info['city']['name_en']."|".$main_info['city']['lat']."|".$main_info['city']['lon']."|".$field."|OK";
+		$main_info['city']['name_en']."|".$main_info['city']['lat']."|".
+		$main_info['city']['lon']."|".$field."|".$inputip."|OK";
 
 	return $retv;
 }
@@ -149,6 +170,7 @@ function print_data_structure()
 	echo "CTY_LAT|Широта города\n";
 	echo "CTY_LON|Долгота города\n";
 	echo "FIELD|Источник IP\n";
+	echo "INPUT_IP|Введенный IP IP\n";
 	echo "MESSAGE|Сообщение об ошибке\n";
 	echo "---END-DATA---\n";
 }
@@ -182,7 +204,7 @@ if (isset($_GET['specdiap'])) //запрос структуры данных
 	die();
 }
 
-echo "IP|ISO_CODE|COUNTRY_NAME|CTNR_LAT|CTNR_LON|REGION_ISO|REGION_NAME|CITY_NAME|CTY_LAT|CTY_LON|FIELD|MESSAGE|\n";
+echo "IP|ISO_CODE|COUNTRY_NAME|CTNR_LAT|CTNR_LON|REGION_ISO|REGION_NAME|CITY_NAME|CTY_LAT|CTY_LON|FIELD|INPUT_IP|MESSAGE|\n";
 echo "---START-DATA---\n";
 //проверка наличия переменной, если она есть 
 //проверяем не тот IP с которого зашли а переданный
